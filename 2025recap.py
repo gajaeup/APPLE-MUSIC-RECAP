@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime
 from collections import defaultdict
 
+# 설정 및 데이터 로드
 required_cols = [
     'Song Name', 
     'Event Received Timestamp', 
@@ -11,17 +12,23 @@ required_cols = [
     'Album Name'
 ]
 
-song = pd.read_csv("", encoding='utf-8') #애플뮤직 파일 넣기
+song = pd.read_csv("", encoding='utf-8') #애플 뮤직 CSV 파일
 song = song[required_cols]
 
 song = song.dropna(how='all', axis=1)
 song = song[song['Container Type'].str.upper() == 'PLAYLIST']
 
-
 song['Event Received Timestamp'] = pd.to_datetime(song['Event Received Timestamp'], format='mixed').dt.tz_localize(None)
+past_songs = set(song[song['Event Received Timestamp'].dt.year < 2025]['Song Name'])
+
+# 2025년에 들은 노래들
+current_songs = set(song[song['Event Received Timestamp'].dt.year == 2025]['Song Name'])
+real_new_songs = current_songs - past_songs
+new_song_cnt = len(real_new_songs)
 
 # 2025년 데이터만 필터링
 song = song[song['Event Received Timestamp'].dt.year == 2025]
+
 
 song_counts = song['Song Name'].value_counts()
 song['Play Count'] = song['Song Name'].map(song_counts)
@@ -48,7 +55,7 @@ for i, row in song.iterrows():
     days_passed = max(0, diff_days)
     
     # 시간 점수 계산
-    time_score = 1.0 * (0.975 ** days_passed) 
+    time_score = 1.0 * (0.98 ** days_passed) 
     score = time_score
     
     # 가중치 적용
@@ -67,8 +74,12 @@ for i, row in song.iterrows():
 
 
 top_songs = sorted(song_dates.items(), key=lambda x: x[1]['score'], reverse=True)[:15]
- 
-print(f"\n--- {desired_date.year}년 음악 랭킹 Top 15 ---\n")
+
+print(f"\n======== 2025 recap ========")
+print(f"새로 발견한 노래: {new_song_cnt}곡") 
+print(f"===========================\n")
+
+print(f"\n--- {desired_date.year}년 나만의 음악 랭킹 Top 15 ---\n")
 for rank, (song_name, data_info) in enumerate(top_songs, start=1):
     print(f"Ranking: {rank}")
     print(f"Song: {song_name}")
